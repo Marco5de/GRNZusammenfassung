@@ -1,0 +1,300 @@
+
+\section{Überblick: Netzwerkschicht}
+\begin{itemize}
+    \item Transport von Segmenten vom Sender zum Empfänger
+    \item Einkapseln von Segmenten in Datagramme
+    \item Empfänger: weiterleiten der eingegangenen Segmente an die Transportschicht
+    \item Netzwerkschichtprotokolle in jedem Host und Router implementiert (erste Schicht die auch im Netzwerk-Core vorhandene ist)
+    \item Router parsen Netzwerkheader aller IP-Datagramme
+\end{itemize}
+
+\subsubsection{Aufgaben der Netzwerkschicht}
+\begin{itemize}
+    \item \textbf{Forwarding}: Weiterleiten von Paketen im Router. Findet vollständig auf der Data-Plane statt
+    \item \textbf{Routing}: Routing ist der Vorgang, Pakete durch ein Netzwerk von einem Host zu einem Anderen zu transportieren. Dafür werden Pakete in Routern forwarded.
+    Routing wird in die control-plane von Routern eingeordnet.
+\end{itemize}
+
+\subsubsection{Data plane}
+\begin{itemize}
+    \item Lokale Funktionalität im Router
+    \item Forwarding
+\end{itemize}
+
+\subsubsection{Control plane}
+\begin{itemize}
+    \item Netzwerkweite Funktion
+    \item Ansätze für Control plane:
+            \begin{itemize}
+                \item herkömmliches routing im Router implementiert
+                \item Software-defined networking
+            \end{itemize}
+\end{itemize}
+
+\subsection{Service Modell der Netzwerkschicht}
+Die Netzwerkschicht kann ebenfalls eine besimmte Dienstgüte anbieten. Einige Dienste wären
+\begin{itemize}
+    \item garantierte Zustellung
+    \item garantierte Zustellung mit weniger als 40ms delay
+    \item geordnete Zustellung
+    \item minimale Datenrate
+\end{itemize}
+
+Tatsächlich bietet das IP keinen dieser Dienste an. Das IP operiert nur nach dem \emph{best effort} Modell.
+
+\section{Routerarchitektur}
+\begin{itemize}
+    \item \textbf{Inputports}: terminiert eingehenden Link. Hier geschieht der Lookup d.h. der Outputport wird anhand der Forwardingtable festgelegt
+    \item \textbf{Switching fabric}: verbindet die Input- mit den Outputports
+    \item \textbf{Outputport}: führt die notwendigen Link- \& Physicallayer Funktionen aus um das Datagram zu senden
+    \item \textbf{Routing processor}: der Routingprozessor führt die Routingprotokolle aus und enthält die Routingtables, aus dieser berechnet er die Forwardingtable
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch4/RouterArch.png}
+    \caption{Aufbau eines Routers}
+    \label{Ch04-Routers-Arch}
+\end{figure}
+
+\subsubsection{Inputport processing}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch4/InputPortProcessing.png}
+    \caption{Inputport processing}
+    \label{Ch04-Inputportprocessing}
+\end{figure}
+ Zur Bestimmung des Outputports wird \emph{prefix matching} verwendet. Beim Durchsuchen der Routingtable nach einer Zieladresse wird der längste Adresspräfix verwendet, der mit der Zieladresse übereinstimmt. Im Bereich von Gigabit Übertragungsraten muss dieser Lookup binnen Nanosekunden geschenen. Folglich ist das ganze in Hardware implementiert.
+ 
+ \subsection{Switching}
+ Die Switching fabric verbindet die Input- mit den Outputports. Es ist daher essentiell dass der Delay hierbei so gering wie möglich ist.
+ 
+ \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch4/Switching.png}
+    \caption{Verschiedene Implementierungen von Switching}
+    \label{Ch04-switching}
+\end{figure}
+
+\subsubsection{Switching via memory}
+CPU übernimmt forwarding. Es kann immer nur ein ein Paket zur gleichen Zeit forwarded werden.
+
+\subsubsection{Switching via a bus}
+Paket wird direkt von Inputport zum Outputport transportiert ohne dass der Routingprozessor interferiert. Dies geschieht mit Hilfe eines Switch internen Labels, sodass der korrekte Ouputport dass Paket akzeptiert und verarbeitet. Die maximale Geschwindigkeit wird hier also durch die Geschwindigkeit des Buses limitiert.
+
+\subsubsection{Switching via an interconnection network}
+Hiermit können mehrere Pakete auf einmal forwarded werden, falls diese für verschiedene Outputports bestimmt sind.
+
+\subsection{Outputport processing}
+ \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch4/outputport.png}
+    \caption{Outputport processing}
+    \label{Ch04-outputport}
+\end{figure}
+
+\begin{itemize}
+    \item Buffern notwendig, wenn Datagramme schneller ankommen als Datenrate des Ausgangsport eine Weiterleitung zulässt
+    \item Scheduling Strategie bestimmt, welche Datagramme verschickt werden (z.B. Fifo oder Priorität)
+\end{itemize}
+Nach RFC 3439 ist eine Daumenregel für die Größe des Pufferspeichers
+\begin{equation*}
+    \text{Buffer} = \frac{\text{RTT}\cdot C}{\sqrt{N}}
+\end{equation*}
+,wobei $C$ die Linkkapazität und $N$ die Anzahl der Flows ist.
+
+\section{Internet Protokoll (IP)}
+
+ \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch4/IPnetworklayer.png}
+    \caption{Überblick über das IP}
+    \label{Ch04-IPnetworklayer}
+\end{figure}
+
+\subsection{IPv4}
+\subsubsection{IPv4 Datagram Format}
+ \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch4/ipv4Datagram.png}
+    \caption{Aufbau eines IPv4 Datagrams}
+    \label{Ch04-ipv4}
+\end{figure}
+
+\begin{itemize}
+    \item \textbf{Version}: spezifiziert welche Protkollsversion verwendet wird
+    \item \textbf{Headerlength}: Header kann Optionen enthalten und hat dann beliebige Länge, sind die Optionen leer ist der Header 20 Byte groß
+    \item \textbf{Type of Service}: Unterscheidung von Echtzeitdatagramen (Telefonie etc.) von anderen
+    \item \textbf{Datagram length}: totale Länge des IP- Datagrams \textbf{inkl.} Header
+    \item \textbf{Fragmentation}: wird genutzt um Fragmentierung zu signalisieren und enthält zusätzliche Informationen (Offset etc.)
+    \item \textbf{Time-to-live}: sorgt dafür, dass Datagramme nicht unendliche Lange im Netzwerk zirkulieren können. TTL wird dekrementiert wenn es von einem Router verarbeitet wird. Erreicht die TTL 0 wird das Datagram verworfen
+    \item \textbf{Protocol}: zeigt an welches Transportschichtprotokoll verwendet wird
+    \item \textbf{Header Checksum}: für Fehlererkennung. Berechnung ähnlich der Internet Checksum. Beachte: Summe muss an jedem Router neu berechnet werden, da sich die TTL ändert
+    \item \textbf{Source and Destination IP-Adresse}: 
+    \item \textbf{Options}: 
+    \item \textbf{Data}: payload
+\end{itemize}
+
+Sowohl der TCP als auch der IPv4 Header haben ohne Optionen eine Länge von 20 Bytes.
+
+\subsubsection{IPv4 Fragmentierung}
+Wenn ein Paket mit einer Größe größer als die MTU des ausgehenden Links den Router erreicht, wird dieses in größen Fragmentiert, die der ausgehende Link senden kann.\\
+Erklärung der Fragmentierung von IPv4 Paketen an einem Beispiel:
+\hfill\break 
+\paragraph{Aufgabenstellung:}Ein IPv4-Paket mit 20 Bytes Header und 700 Bytes Payload (Nutzlast) erreicht einen Router.
+Der vom Router gewählte ausgehende Link besitzt eine MTU (Maximum Transmission Unit) von 340 Bytes.
+Führen Sie die notwendige IP-Fragmentierung durch, in dem Sie alle Fragmente inklusive relevanter Header-Felder auflisten.
+Jeder Eintrag soll hierbei ein einzelnes IP-Paket darstellen und die Header Felder ID, More Fragments Flag und Offset auflisten.
+Geben Sie ebenfalls jeweils die Größe von Header, Payload und Gesamtpaketgröße in Byte an.
+Erstellen Sie dabei genau so viele Fragmente wie nötig. Verwenden Sie als initiale ID 461.\\
+
+\paragraph{Lösung:}
+Eingangspaket:\\
+
+\noindent20Bytes Header + 700 Bytes Payload = 720 Byte Paket\\
+ID=461\\
+fragflag = 0 und offset = 0\\
+Da der Ausgangslink des Routers nur eine maxiamle MTU von 340 Bytes hat, muss das Paket fragmentiert\\ werden.\\
+\hfill \break
+Ausgang: Paket 1\\
+\noindent20Bytes Header + 320 Bytes Payload = 340 Byte Paket\\
+ID=461\\
+fragflag = 1 und offset = 0\\
+\hfill \break
+Paket 2\\
+\noindent20 Bytes Header + 320 Bytes Payload = 340 Byte Paket\\
+ID = 461\\
+fragflag = 1 und offset = 320/8 = 40\\
+\hfill \break
+Paket 3\\
+\noindent20 Bytes Header + 60 Bytes Payload = 80 Byte Paket\\
+ID = 461\\
+fragflag = 0 und offset = 640/8 = 80\\
+
+\subsubsection{IPv4 Adressierung}
+Eine IP-Adresse ist aufgebaut aus Subnet-Teil und dem Host-Teil.\\
+CDIR-Adressierung:
+\begin{itemize}
+    \item CIDR: Classless InterDomain Routing
+    \item erlaubt Subnetzne mit Netzwerkteil beliebiger Länge
+    \item 200.23.16.0/23 ist in CIDR-Adressdarstellung
+\end{itemize}
+
+
+\subsection{Zuweisung von IP-Adressen}
+Ein Interface kann seine IP-Adresse entweder fest durch einen Systemadmin zugewiesen bekommen oder dynamisch durch Verwendung von bspw. DHCP.
+
+\subsubsection{Dynamic Host Configuration Protocol (DHCP)}
+\begin{itemize}
+    \item dynamische Zuweisung von IP-Adressen and Interfaces eines Hosts durch DHCP-Server
+    \item Lease Konzept: nur temporäre Vergabe
+    \item Überblick:
+            \begin{itemize}
+                \item Host broadcastet \textit{DHCP discover}-Nachricht
+                \item DHCP-Server antwortet mit \textit{DHCP offer}
+                \item Host fragt IP-Adresse an \textit{DHCP request}
+                \item DHCP-Server bestätigt Adresse \textit{DHCP ack}
+            \end{itemize}
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=13cm]{images/Ch4/dhcp.png}
+    \caption{DHCP}
+    \label{fig:dhcp}
+\end{figure}
+
+\subsection{Network Adress Translation (NAT)}
+\begin{itemize}
+    \item Mittel gegen IPv4 Adressknappheit
+    \item Lokales Netzwerk belegt nur eine globale IP-Adresse
+    \item Keine Änderungen der internen Adressen bei ISP Wechsel
+    \item Geräte im internen Netz nicht von außen adressierbar
+    \item Umstritten, da Router die Header der anderen Schichten verändern
+\end{itemize}
+Verwendung von UPnP um Hosts in einem NAT zu adressieren (erfahren der öffentlichen IP-Adresse und Port-Mappings (temporär)).\\
+Eine andere Möglichkeit ist Relaying. NATed Client erstellt Verbindung zu Relayserver, dieser leitet Pakete an anderen Client weiter.
+
+\subsection{Internet Control Message Protocol (ICMP)}
+\begin{itemize}
+    \item Kommunikation von Netzwerkschichtinformationen zwischen Hosts \& Routern
+    \item ICMP-Message besteht aus Type und Code
+    \item einige der verfügbaren Nachrichten
+            \begin{itemize}
+                \item echo reply (ping)
+                \item dest network/host/protocol/port unreachable
+                \item dest network/host unknown
+                \item route advertisement
+                \item router discovery
+                \item TTL expired
+                \item bad IP header
+            \end{itemize}
+\end{itemize}
+
+\subsubsection{ICMP und Traceroute (D3Ü7)}
+Bei Traceroute werden nach dem die URL per DNS aufgelöst wurde je 3 UDP Datagramme mit einer TTL von i versendet werden. i beginnt hierbei bei 1 und wird so lange inkrementiert, bis der gesuchte Hop erreicht wurde oder die maximale Anzahl an Hops erreicht wurde (standardmäßig 30).\\
+\hfill \break
+Kommt nun also bei Router i ein solches Paket an bemerkt dieser dass er die TTL nicht mehr dekrementieren kann, da die TTL dann 0 ist. Er sendet ein ICMP Paket vom Type 11, welches für Time-to-live exceeded steht, an den Sender zurück. Traceroute misst die Zeit zwischen senden des UDP Datagrams und erhalten des ICMP Pakets und gibt diese als RTT zum i-ten Router an.\\
+\hfill \break
+Da im UDP Datagram eine Portnummer gewählt wird, welche sehr wahrscheinlich nicht in Benutzung ist, kann mit einem ICMP Paket vom Type 3 (dest. port unreachable) bestätigt werden, dass der Host erreicht wurde.
+
+\subsection{IPv6}
+\begin{itemize}
+    \item IPv4 Adressraum zu klein
+    \item Header soll feste länge haben $\rightarrow$ schnellere Verarbeitung
+    \item bessere Unterstützung für Quality of Service
+\end{itemize}
+
+\subsubsection{IPv6 Header}
+\begin{itemize}
+    \item Vergrößerung des Adressraums von 32 auf 128bit
+    \item \textbf{Traffic-Class}: analog zu Type of Service bei IPv4
+    \item \textbf{Flow Label}: Pakete können einem Flow zugeordnet werden und dann bevorzugt behandelt
+    werden (bspw. bei VoIP oder Media-Paketen, nicht bei Filetransfer o.ä.)
+    \item \textbf{Payload length}: gibt Länge des Pakets an, das \textit{nach} dem Header kommt
+    \item \textbf{Next Header}: gibt an welches Protokoll der Payload verwendet (TCP,UDP)
+    \item \textbf{Hop limit}: klar, wird von jedem Router, der das Paket forwareded, dekrementiert bis 0 erreicht wird
+\end{itemize}
+
+Die folgenden Felder finden in IPv6 keine Verwendung mehr
+\begin{itemize}
+    \item Fragmentation: IPv6 sieht keine Fragmentierung von Paketen mehr vor. Wird ein zu großes Paket versendet, sendet der Router eine ICMP zurück
+    \item Checksum: schnelleres forwarden ohne Neuberechnung der Summe bei jedem Router und TCP/UDP führen ebenfalls eine Checksum durch
+    \item Options: IPv6 Header hat eine feste Größe von 40 Byte
+\end{itemize}
+
+\subsubsection{Kürzen von IPv6 Adressen}
+\begin{itemize}
+    \item weglassen von führenden Nullen
+    \item einmaliges ersetzen von Nullenblock durch ::
+\end{itemize}
+
+\paragraph{Beispiele:}
+\hfill \break
+\lstinline{2001:0DB8:AC10:0000:0000:0000:0000:FE01 --> 2001:DB8:AC10::FE01}\\
+\lstinline{0000:000D:0000:0000:000A:0000:0000:000D --> 0:D::A:0:0:0D}\\
+\lstinline{2001:0047:0011:0000:0000:AFFE:0000:0000 --> 2001:47:11:0:0:AFFE::}
+
+
+\section{Routing}
+
+Router sind Hosts mit mehreren Netzwerkinterfaces und damit mehreren IP Adressen. Aufgabe des Routers ist das Routing, d.h. das Weiterleiten von Paketen und das Entscheiden, an welches Interface ein eingehendes Paket weitergeleitet wird. Der Router besitzt dafür eine \emph{Control Plane}, wo ein Routing Algorithmus Pfade für Pakete bestimmt und eine \emph{Routingtabelle} (Forwarding Table) befüllt, anhand derer auf der \emph{Data Plane} eingehende Pakete weitergeleitet werden. Oft ist dies ein \emph{Destination-based Forwarding}, das Ausgangsinterface wird in der Routingtabelle mit Hilfe von \emph{Longest Prefix Matching} mit der Zieladresse ermittelt.
+
+Für bessere Skalierung und administrative Autonomie werden Netzwerke üblicherweise in viele \emph{Autonomous Systems (AS)} unterteilt, deren innere Struktur nach außen nicht bekannt sein muss, und das im Inneren andere Routingprotokolle verwenden kann, als außerhalb, zwischen mehreren AS. Die Router eines AS, die nach außen hin sichtbar sind und mit Routern anderer AS kommunizieren, werden \emph{Border Router} genannt.
+
+\subsection{Intra-AS Routing}
+Intra-AS Routing bezeichnet das Routen von Paketen im eigenen Netzwerk / innerhalb eines AS. Ein gängiges Intra-AS Routing Protokol ist \emph{Open Shortest Path First (OSPF)}. OSPF ist ein Link-State Algorithmus, zum Ausführen des Algorithmus muss also die gesamte Netzwerktopologie bekannt sein. Dazu wird das Netzwerk mit Paketen mit Link State Informationen geflutet und dann auf jedem Knoten die Routen mit Dijkstra's Algorithmus berechnet. OSPF verfügt über fortgeschrittenen Funktionen wie das Authentisieren von Nachrichten, mehreren Pfaden mit gleichen Kosten oder mehreren Kosten pro Link (je nach Type of Service).
+In großen Netzen können mittels \emph{hierarchischem OSPF} Teile des Netzes zu Areas zusammengefasst werden. Diese Areas sind mittels Area Border Routers mit dem Backbone verbunden, wo Backbone Router verschiedene Areas verbinden.
+
+\subsection{Inter-AS Routing}
+Für Inter-AS Routing wird üblicherweise das \emph{Border Gateway Protocol (BGP)} verwendet. AS geben mittels eBGP bekannt, welche Routen ihnen bekannt sind. Diese Routen bestehen aus dem Präfix des entsprechenden Netzes und Attributen, wichtige Attribute sind
+\begin{itemize}
+    \item \emph{AS-PATH} Pfad, den das Advertisement genommen hat, jedes AS, das ein Advertisement weiterleitet, fügt diesem Attribut die eigene AS Nummer an.
+    \item \emph{NEXT-HOP} IP Adresse des Routers, der Pakete an das Ziel Netzwerk weiterleiten kann. Bei eBGP typischerweise die Absender IP-Adresse
+\end{itemize}
+Mittels iBGP können Border Router empfangene Informationen an andere Border Router im gleichen AS weiterleiten. Die eigentliche Routenauswahl kann dann anhand mehrerer Kriterien geschehen, wie bspw. kürzester \lstinline{AS-PATH}, nächster \lstinline{NEXT-HOP}, eigener Policies und mehr.
+
+\subsection{Routing Algorithmen}
+\subsubsection{Dijkstra's Algorithmus}
+Übung machen $\implies$ lernt man mehr als das hier zu lesen.
+\subsubsection{Distance Vector}

@@ -1,0 +1,31 @@
+\section{OSI-Schichtenmodell}
+
+\subsection{Schichtenmodell}
+Ein Schichtenmodell basiert darauf, dass eine Schicht Dienste an eine darüberliegende Schicht anbietet. Verschiedene Schichten kommunizieren durch Messages miteinander, während Schichten auf der gleichen Ebene über Protokolle miteinander kommmunizieren.
+
+
+\subsection{OSI-Schichtenmodell und protocol stack}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch1/OSI-layers.png}
+    \caption{Five-layer Internet protocol stack and Seven layer ISO OSI reference modell}
+\end{figure}
+Ein Schichtenmodell ermöglicht die Abstraktion von der Komplexität der Aufgabe, so dass sich ein Anwendungsentwickler darauf verlassen kann, dass die unteren Schichten die er nutzt ihm geweisse Dienste zur Verfügung stellen.
+
+\subsection{Einführung in die einzelnen Schichten}
+\begin{itemize}
+    \item \textbf{Application Layer}: ein Anwendungsschicht Protokoll ist auf viele Endsysteme verteilt. Die Anwendung tauscht Informationen zwischen den Endsystemen aus. Man spricht auch von Messages die ausgetauscht werden. Einige Beispiele für Anwendungschichtprotokolle sind HTTP, SMTP, FTP
+    \item \textbf{Transport Layer}: Austausch von Segmenten zwischen Prozessen in getrennten Endsystemen. Bspw. TCP, UDP, QUIC
+    \item \textbf{Network Layer}: Für das Routen von Datagramen verantwortlich. Enthält als Entitäten die Router im Netzwerkkern. Bsp: IP und diverse Routingprotokolle
+    \item \textbf{Link Layer}: Bringt Frames vom einen Hop zum nächsten. Bsp: Ethernet, WiFi
+    \item \textbf{Physical Layer}: bewegt die einzelnen Bits vom einen Knoten zum nächsten. Hängt vom Übertragungsmedium ab
+\end{itemize}
+
+Das ISO/OSI-Referenzmodell führt zusätzlich noch folgende weitere Schichten:
+
+\begin{itemize}
+    \item \textbf{Presentation Layer}: zuständig für die Repräsentation der Daten, dies schließt Komprimierung und Verschlüsselung ein
+    \item \textbf{Session Layer}: zuständig für Synchronisation, Checkpoints oder auch die Wiederaufnahme einer Sitzung
+\end{itemize}
+
+%\todo[inline]{Einfügen welche Ergänzungen das OSI schichtenmodell macht (Session \& Presentation)}

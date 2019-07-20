@@ -1,0 +1,61 @@
+\section{Überblick Linklayer}
+
+Der Link Layer ist im Schichtenmodell zwischen Netzwerk- und Physical Layer einzuordnen, seine Aufgabe ist es, (IP-) Datagramme des Netzwerklayers verpackt als Frame von einem Host an einen anderen, direkt verbundenen Host zu senden. Wichtiger Aspekt dieses Layers ist \emph{MAC} (Medium Access Control).
+
+\section{Fehlererkennung}
+\subsection{Parity Check}
+\newlinepar{Einzelbitparität}
+Hier wird den Daten ein einzelnes Bit angefügt, welches $0$ ist, falls die Anzahl von $1$-Bits in den Daten gerade ist, und $1$ sonst.
+Durch überprüfen der Parity Information kann ein einzelner Bitfehler erkannt werden.
+
+\newlinepar{Zweidimensionale Parität}
+Hier werden die Daten in Matrixform angeordnet, und dann die Parität jeder Zeile und jeder Spalte berechnet und angefügt. Bei einem Bitfehler tritt ein Partiy Error sowohl in der entsprechenden Zeile als auch der Spalte auf, der Fehler kann dadurch lokalisiert und korrigiert werden.
+
+\subsection{Cyclic Redundancy Check (CRC)}
+Die Datenbits der Länge $d$ werden als Binärzahl $D$ interpretiert. Um eine CRC Checksumme von Länge $r$ zu berechnen, wird ein Generator $G$ der Länge $r+1$ benötigt. $R$ wird dann so gewählt, dass $<D,R>$ durch $G$ teilbar ist.\\
+Für das berechnen der CRC können $<D,R>$ und $G$ als Polynome vom Grad $d+r$ bzw. $r+1$ angesehen werden. Für das berechnen der CRC wird dann eine Polynomdivison von $<D,R>$ und $G$ durchgeführt. Der Rest, den diese Polynomdivision ergibt, stellt dann gerade $R$ dar.
+
+\begin{equation*}
+    <D,R>\;:\;G\;=\;\text{Polynom}+\frac{R}{G}
+\end{equation*}
+
+\section{MAC Protokolle}
+Die Aufgabe eines MAC Protokolls ist es, einen gemeinsamen Kanal für mehrere Clients nutzbar zu machen. Diese können in folgende Kategorien eingeordnet werden:
+\begin{itemize}
+    \item \textbf{Channel Partitioning}\\
+        Aufteilen des Kanals in Teile (Frequenzen, Zeitslots, etc)
+    \item \textbf{Random Access}\\
+        Direktes Senden und eventuelles Handling von Kollisionen
+    \item \textbf{Taking Turns}\\
+        Abwechselnder Kanalzugriff von jeweils einem Client
+\end{itemize}
+
+\subsection{TDMA, FDMA}
+\emph{TDMA} (Time Division Multiple Access) und \emph{FDMA} (Frequency Division Multiple Access) sind einfache Beispiele für Channel Partitioning: Jedem Client wird ein fester Zeitslot bzw eine feste Frequenz zugeteilt. Auf diese Weise kann der Kanal aber nur sehr ineffizient genutzt werden und die Anzahl der Clients ist begrenzt.
+
+\subsection{Random Access Protokolle}
+Random Access Protokolle versprechen bei gering genutztem Kanal deutlich bessere Latenz und höhere Bandbreitennutzung als Channel Partitioning Protokolle. Zentrale Problemstellung ist hier der Umgang mit Kollisionen, wenn mehrere Clients gleichzeitig den Kanal nutzen wollen.
+
+\subsubsection{ALOHA}
+Beim \emph{ALOHA} Protokoll wird ein Frame sofort gesendet. Wenn während der Übertragung eine Kollision auftritt, muss der Frame zu spätererem Zeitpunkt erneut gesendet werden. \\
+Eine verbesserte Version des ALOHA Protokolles ist \emph{Slotted ALOHA}. Hier sind alle Frames gleich groß, und der Kanal wird in Zeitslots unterteilt, die jeweils der Übertragungsdauer eines Frames entsprechen. Die Clients sind nun Zeitsynchronisiert, und beginnen die Übertragung eines Paketes nur am Anfang eines Zeitslots. Kollisionen können hier nur im jeweils gleichen Zeitslot auftreten, und nicht wie bei reinem \emph{ALOHA} auch mit Frames, die früher oder später gesendet werden. Die Effizienz (Anteil der Sendezeit, der zur effektiven Übertragung genutzt wird) von \emph{Slotted ALOHA} beträgt $37\%$, die von reinem \emph{ALOHA} nur $18\%$.
+
+\subsubsection{CSMA}
+Bei \emph{Carrier Sense Multiple Access} wird vor dem Übertragen eines Frames sichergestellt, dass der Kanal momentan ungenutzt ist. Dies eliminiert jedoch nicht alle Kollisionen: Aufgrund des Propagation Delay kann es vorkommen, dass dennoch Kollisionen auftreten, welche erkannt werden müssen und eine Retransmission erforderlich machen.\\
+Verbessert wird dies durch \emph{CSMA/CD} (CSMA mit \emph{Collision Detection}). Hier wird eine Kollision bereits während der Übertragung erkannt, und diese daraufhin abgebrochen. So wird weniger Zeit damit verbracht, Daten zu senden, die aufgrund einer Kollision aber unbrauchbar werden. Die Effizienz von \emph{CSMA/CD} geht im best case gegen $1$.\\
+Eine weitere Variante ist \emph{CDMA/CA} (CSMA mit \emph{Collision Avoidance}).
+
+\subsection{Taking Turns Protokolle}
+\subsubsection{Polling}
+Für Polling fordert ein Client (\emph{Master}) die anderen Clients (\emph{Slaves}) einzeln zum Senden auf. Dies führt zu erheblichem \emph{Polling Overhead} und einem \emph{Single Point of Failure}, ermöglicht aber sehr einfache Clients, wenn diese nur die Rolle des \emph{Slave} einnehmen. (Genutzt z.B. bei \emph{Bluetooth}).
+
+\subsubsection{Token Passing}
+Die Clients werden in einer ringförmigen Topologie angeordnet, und es wird ein virtueller \emph{Token} generiert, den immer nur genau ein Client besitzt. Nur der Besitzer des Tokens ist zur Nutzung des Kanals berechtigt. Auch dieser Ansatz führt zu erheblicher Latenz, und es werden weitere Mechanismen z.B. für Token (Re-)Generation benötigt.
+
+\section{MAC Adressen}
+\label{sec:mac-address}
+\paragraph{tl;dr}
+48bit, globally unique für jedes NIC, kann man kaufen: 16777214 für $2905\$$, 1052676 für $1745\$$ oder 4096 für $730\$$.
+
+\section{Address Resolution Protocol ARP}
+ARP ermöglicht es Teilnehmern in einem LAN, einer IP Adresse die passende \hyperref[sec:mac-address]{MAC Adresse} zuzuordnen. Dafür werden Broadcasts mit Zieladresse \lstinline{FF-FF-FF-FF-FF-FF} gesendet, die von jedem Client im LAN empfangen werden. Der Client mit passender IP-Adresse antwortet dem Anfragenden mit seiner MAC-Adresse. Diese Informationen werden von Clients gecached, besitzen aber einen Timeout.

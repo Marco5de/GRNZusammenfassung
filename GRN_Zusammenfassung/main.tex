@@ -1,0 +1,85 @@
+\documentclass[a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[ngerman]{babel}
+\usepackage{hyperref}
+\usepackage[all]{hypcap}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{esvect}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{todonotes}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.10}
+\usepgfplotslibrary{fillbetween}
+\usetikzlibrary{patterns}
+\usepackage{listings}
+\usepackage{mathtools}
+
+\hypersetup{
+     colorlinks   = true,
+     citecolor    = gray
+}
+
+% Paragraph, wobei der Text in neuer Zeile ohne indent beginnt
+\newcommand{\newlinepar}[1]{\paragraph{#1}\mbox{}\\\noindent}
+
+% Bold \emph
+\let\emph\relax
+\DeclareTextFontCommand{\emph}{\bfseries\em}
+
+\begin{document}
+\begin{titlepage}
+    \centering
+    \vfill
+    \vfill
+    {\bfseries\Large
+        Zusammenfassung Grundlagen der Rechnernetze\\
+        WS18/19\\
+    }    
+    \vskip2cm
+        Jonas Otto\\ \href{mailto:edwin.otto@uni-ulm.de}{edwin.otto@uni-ulm.de}\\
+        Luca Krüger\\ \href{luca.krüger@uni-ulm.de}{luca.krüger@uni-ulm.de}\\
+        Marco Deuscher\\ \href{marco.deuscher@uni-ulm.de}{marco.deuscher@uni-ulm.de}\\
+        \vfill
+     Dezember 2018 - März 2019
+    \vfill
+    \vfill
+    \vfill
+\end{titlepage}
+
+\clearpage
+
+%\maketitle
+
+%\listoftodos
+\newpage
+
+\tableofcontents
+\newpage
+
+\chapter{Einführung}
+\input{chapters/introduction.tex}
+
+\chapter{Anwendungsschicht}
+\input{chapters/applicationlayer.tex}
+
+\chapter{Transportschicht}
+\input{chapters/transportlayer.tex}
+
+\chapter{Netzwerkschicht}
+\input{chapters/networklayer.tex}
+
+\chapter{Linklayer}
+\input{chapters/linklayer.tex}
+
+\chapter{Drahtlose-Kommunikation}
+\input{chapters/wireless_comm.tex}
+
+\chapter{Netzwerksicherheit}
+\input{chapters/security.tex}
+
+
+\end{document}

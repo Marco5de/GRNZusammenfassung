@@ -1,0 +1,419 @@
+\section{Allgemeines zur Transportschicht}
+\begin{itemize}
+    \item Logische Kommunikation zwischen Anwendungen auf verschiedenen Hosts
+    \item Transportschichtprotokolle laufen nur auf Endsystemen
+    \item Typische Internet Transportschichtprotokolle sind TCP und UDP
+\end{itemize}
+
+\subsection{Transport- vs. Networklayer}
+Netzwerkschicht stellt logische Kommunikation zwischen Hosts zur Verfügung.\\
+\noindent Transportschicht stellt logische Kommunikation zwischen Prozessen zur Verfügung.
+
+\subsection{Multiplexing und Demultiplexing}
+Transportschicht des Senders verwaltet die Daten mehrerer Sockets und fügt diesen einen Transportheader hinzu.\\
+\noindent Beim Demultiplexing werden die Headerinformationen verwendet um die Segmente an den richtigen Socket zu liefern\\
+\hfill \break
+Was wird mindestens benötigt damit der Empfänger weiß an welchen Socket das entsprechende Segment zugestellt werden soll?
+
+\section{User Datagram Protocol (UDP)}
+\subsection{Allgmeines zu UDP}
+\begin{itemize}
+    \item sehr simples Transportschichtprotokoll
+    \item best effort Dienst, d.h. UDP-Segmente können
+            \begin{itemize}
+                \item verloren gehen
+                \item in der falschen Reihenfolge ankommen
+            \end{itemize}
+    \item Verbindungslos
+            \begin{itemize}
+                \item kein initialer Handshake zwischen Sender und Empfänger
+                \item jedes UDP-Segment wird unabhängig behandelt
+            \end{itemize}
+    \item Anwendung:
+            \begin{itemize}
+                \item Streaming multimedia (Verluste werden toleriert)
+                \item DNS
+                \item SNMP
+            \end{itemize}
+    \item möchte man einen zuverlässigen Datentransport mit UDP erreichen, muss dies in der Anwendungsschicht implementiert werden    
+\end{itemize}
+
+\subsection{UDP-Segment}
+Es werden sowohl Source- als auch Destinationport benötigt damit das UDP-Segment von der Transportschicht eindeutig zugeordnet werden kann. Das Feld Length enthält die Länge des UDP-Segments \emph{inklusive} Header in Bytes.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{images/Ch3/UDP_segment.png}
+    \caption{Aufbau eines UDP-Segments}
+    \label{Ch03-UDP_segment}
+\end{figure}
+
+\subsubsection{UDP-Checksumme}
+Zur Erkennung von Fehlern bspw. flipped Bits wird eine Checksumme eingesetzt.\\
+\noindent Sender:
+\begin{itemize}
+    \item Segmentinhalt als Sequenz von 16-Bit Integers
+    \item Checksumme: Addition (Einerkomplement) der Werte
+    \item Sender trägt Ergebnis in Checksummen Feld ein
+\end{itemize}
+\noindent Empfänger:
+\begin{itemize}
+    \item Berechnet ebenfalls die Checksumme des Segments
+    \item vergleich ob die beiden Summen übereinstimmen
+\end{itemize}
+\noindent \textbf{Bemerkung:} mit einer einfachen Checksumme können Fehler erkannt werden, es kann aber trotzdem noch zu Fehlern kommen\\
+\paragraph{Beispiel:}
+\begin{lstlisting}
+x 1 1 1 0 0 1 1 0 0 1 1 0 0 1 1 0
+x 1 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1
+1 1 0 1 1 1 0 1 1 1 0 1 1 1 0 1 1 Wraparound
+x 1 0 1 1 1 0 1 1 1 0 1 1 1 1 0 0 Sum
+x 0 1 0 0 0 1 0 0 0 1 0 0 0 0 1 1 Checksum
+\end{lstlisting}
+
+Hierbei steht x jeweils nur als Platzhalter. Bei der binären Addition kommen Carry Bits zum Einsatz. Beim Wraparound wird das höchste Bit hinten aufaddiert und anschließend das Komplement der Zahl gebildet.
+
+\subsection{Vorteile von UDP}
+\begin{itemize}
+    \item Kein Verbindungsaufbau $\rightarrow$ weniger Delay
+    \item sehr simples Protokoll
+    \item kleiner Header $\rightarrow$ weniger Overhead
+    \item keine Überlastkontrolle, UDP kann mit maximaler Leistung senden
+\end{itemize}
+Damit ist UDP vor allem für Anwendungen interessant die einen gewissen Paketverlust tolerieren können. Zu solchen Anwendungen gehören Streamingdienste, online Spiele und Internettelefonie.
+
+\section{Anforderungen an ein zuverlässiges Transportschicht Protokoll}
+\begin{itemize}
+    \item Fehler die durch unterliegenden Channel zustande kommen sollten erkannt werden. Wenn ein Fehler erkannt wird Korrektur:
+            \begin{itemize}
+                \item versenden von ACK als Bestätigung 
+                \item versenden von NAK als negative Bestätigung
+                \item Sender retransmittet bei ausbleibendem ACK oder NAK
+            \end{itemize}
+    \item Behandlung von Duplikaten
+            \begin{itemize}
+                \item Sender fügt jedem Paket Sequenznummer hinzu
+                \item Empfänger filtert so Duplikate
+            \end{itemize}
+    \item Sender verwendet Timer
+            \begin{itemize}
+                \item Sender wartet bestimmte Zeit auf ein ACK, kommt keines kann er retransmitten
+            \end{itemize}
+\end{itemize}
+Ein solches Protokoll hat aber ein großes Performanceproblem, da es immer im Stop-and-wait Betrieb ist. Um das zu lösen wird \emph{Pipelining} eingesetzt.
+
+\subsection{Pipelining}
+Sender kann mehrere Pakete senden, bevor er ein ACK erwartet
+\begin{itemize}
+    \item es muss mehr Sequenznummern geben
+    \item nicht bestätigte Pakete müssen beim Sender gebuffert werden
+\end{itemize}
+
+\subsubsection{Go-back-N}
+\begin{itemize}
+    \item Sender kann bis zu N nicht bestätigte Pakete in der Pipeline haben
+    \item Empfänger sendet kumulative ACKs $\rightarrow$ bestätigt immer nur das letzte Paket im Datenstrom, vor dem es keine Unterbrechung gab
+    \item Sender hat \emph{einen} Timer für das älteste nicht bestätigte Paket
+            \begin{itemize}
+                \item läuft der Timer ab, werden alle nicht-bestätigten Pakete erneut übertragen
+            \end{itemize}
+    \item durch den retransmit aller N Pakete kann es beim Empfänger zu Duplikaten kommmen  
+    \item auf Empfängerseite ist kein Puffer vorhanden $\rightarrow$ nicht erwartete / in falscher Reihenfolge angekommene Pakete werden daher verworfen
+\end{itemize}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch3/GoBackN.png}
+    \caption{Sicht des Senders auf GBN}
+    \label{Ch03-GBN}
+\end{figure}
+
+\noindent \textbf{Bemerkung}: siehe Moodle bzw. Buch für Applet/Visualiserung von GBN
+
+\subsubsection{Selective Repeat}
+\begin{itemize}
+    \item Empfänger bestätigt individuell alle korrekt empfangenen Pakete
+            \begin{itemize}
+                \item buffert alle empfangene Pakete, die noch nicht an höhere Schicht geliefert werden können, da noch Lücken bestehen
+            \end{itemize}
+    \item Sender schickt nur die Pakete erneut, für die ein ACK fehlt
+            \begin{itemize}
+                \item Separater Timer für jedes nicht-bestätigte Paket
+            \end{itemize}
+    \item Sender Window
+            \begin{itemize}
+                \item N konsekutive Seq.-Nummern
+                \item beschränkt Sequenznummern der gesendeten und nicht bestätigten Pakete
+            \end{itemize}
+    \item besitzt \emph{mehrere} Timer      
+    
+    \item Fenstergröße sollte kleiner gleich dem halben Sequenznummerbereichs sein, damit neue Pakete von Retransmits unterschieden werden können
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch3/SelectiveRepeat.png}
+    \caption{Selective Repeat und Sender- und Empfängersicht}
+    \label{Ch03-SelectiveRepeat}
+\end{figure}
+
+\textbf{Bemerkung}: siehe Buch bzw. Moodle für Applet/Visualisierung von Selective Repeat
+
+
+\section{Transmission Control Protocol (TCP)}
+\subsection{Überblick}
+\begin{itemize}
+    \item \emph{full-duplex} Datenverbindung:
+            \begin{itemize}
+                \item bi-direktionaler Datenfluss innerhalb einer Verbindung
+                \item MTU: Maximum Transmission Unit ist die maximale Übertragungseinheit im IP Paket und Link-spezifisch. Das schließt den Header von TCP ein.
+                \item MSS: Maximum Segment Size gibt maximale Payload Größe vor und hängt von MTU ab
+            \end{itemize}
+    \item \emph{Verbindungsorientiert}:
+            \begin{itemize}
+                \item Three-Way-Handshake: Austausch von Kontrollnachrichten zum Initialisieren des Zustandes von Sender und Empfänger beim Verbindungsaufbau
+            \end{itemize}
+    \item \emph{Flusskontrolle}: Empfänger kann Datenrate des Senders drosseln
+    \item Punkt-zu-Punkte Verbindung: unicast (Ein Sender, ein Empfänger)
+    \item zuverlässig geordneter Bytestream
+    \item Pipelined: TCP \emph{Überlast}- und \emph{Flusskontrolle} setzen Windowgrenzen
+    \item \emph{Überlastkontrolle}: TCP drosselt eigene Sendeleistung bei Congestion im Netzwerk
+\end{itemize}
+
+
+\subsubsection{TCP-Segment Struktur}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch3/TCPsegment.png}
+    \caption{Aufbau eines TCP-Segments}
+    \label{Ch03-TCPsegment}
+\end{figure}
+
+\begin{itemize}
+    \item \emph{Sourceport} und \emph{Destinationport}, wie bei UDP zur eindeutigen Zuordnung benötigt
+    \item \emph{Seq. number} und \emph{ACK number} zählen Datenbytes und nicht Segmente
+    \item \emph{headerlength field}, da durch Optionen verschiedene Länge möglich ist
+    \item \emph{URG}: urgent data (normal nicht genutzt)
+    \item \emph{PSH}: push data now (normal nicht genutzt)
+    \item \emph{RST},\emph{SYN}, \emph{FIN}: Verbindungsauf- und Abbau commands
+    \item \emph{Internetchecksum} analog zu UDP
+    \item \emph{receive Window}: anzahl an Bytes die Empfänger akzeptiert
+\end{itemize}
+Meist ist das Optionfeld leer, sodass der TCP-Header eine Größe von \emph{20 Bytes} hat. Das Optionfeld kommt bspw. zum Einsatz wenn die MSS ausgetauscht wird.\\
+
+\subsection{Seq.- and ACK-numbers}
+\begin{itemize}
+    \item Sequenznummern:
+            \begin{itemize}
+                \item Nummer des ersten Bytes im Segment im Bytestream
+            \end{itemize}
+    \item ACKs:
+            \begin{itemize}
+                \item Seq.-nummer des nächsten Bytes, welches die empfangende Seite erwartet
+                \item kumulative ACKs
+            \end{itemize}
+    \item getrennte Zähler für jede Richtung        
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{images/Ch3/TCPtrivialExample.png}
+    \caption{Triviales Beispiel einer TCP-Verbindung zwischen A \& B}
+    \label{Ch03-TCP-trivialExample}
+\end{figure}
+
+\subsection{TCP Round Trip Time \& Timeout}
+Wie soll der TCP Timeout gesetzt werden? Problem ist die RTT variiert sehr stark.\\
+\noindent Idee: es wird die RTT gemessen und über mehrere solcher SampleRTT der Mittelwert gebildet.\\
+Ein typische Möglichkeit für einen gewichtetet Mittelwert wäre 
+\begin{equation}
+    \text{EstimatedRTT} = (1-\alpha)\cdot \text{EstimatedRTT} + \alpha*\text{SampleRTT}
+\end{equation}
+Damit nimmt der Einfluss vergangener Messungen exponentiell ab. Ein typischer Wert ist $\alpha=0,125$\\
+
+Das Timeoutintervall wird jetzt durch die EstimatedRTT plus eine Sicherheitsmarge berechnet
+\begin{equation}
+    \text{DevRTT}=(1-\beta)\cdot \text{DevRTT} + \beta |\text{SampleRTT}-\text{EstimatedRTT}|
+\end{equation}
+Wobei $\beta=0,25$ ein üblicher Wert ist.
+\begin{equation}
+    \text{TimeoutIntervall} = \text{EstimatedRTT} + 4\cdot\text{DevRTT}
+\end{equation}
+
+\subsection{Grundlegende TCP-Mechanismen}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch3/ACKEvents.png}
+    \caption{Erzeugen von ACKs}
+    \label{Ch03-TCP-ACKEvents}
+\end{figure}
+
+\subsubsection{Fast Retransmit}
+Erhält der Sender 4ACKs mit gleicher Seq.-Nummber (\emph{3 duplicate ACK}) erneutes Senden des nicht-bestätigten Segments mit kleinster Seq.-Nummer. Übertrage das Segment direkt, ohne auf den Timeout zu warten.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/Ch3/TCPFastRT.png}
+    \caption{TCP Fast Retransmit bevor der Timer ausläuft}
+    \label{Ch03-TCP-FRT}
+\end{figure}
+
+\subsection{Pipelining bei TCP - GBN oder Selective Repeat}
+\begin{itemize}
+    \item TCP ACKs sind kumulativ
+    \item out-of-order Segmente werden nicht individuell ACK
+            \begin{itemize}
+                \item TCP-Sender merkt sich nur die niedrigste Seq.-Nummer des noch nicht bestätigten Segments (SendBase) und die Seq.-Nummer des nächsten noch nicht gesendeten Segments (NextSeqNum)
+            \end{itemize}
+    \item es gibt TCP Implementationen die korrekt erhaltene out-of-order Segmente bufferen
+\end{itemize}
+
+\noindent TCPs Fehlerbehebungsmechanismus ist also ein Hybrid aus GBN und selective Repeat
+
+\subsection{TCP Flusskontrolle (Flowcontrol)}
+Prinzip: Empfänger kontrolliert Sender, so dass dieser den Buffer nicht zum Überlaufen bringt.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch3/FlowControl.png}
+    \caption{Receive Window und receive Buffer}
+    \label{Ch03-TCP-Flowcontrol}
+\end{figure}
+\noindent Empfänger teilt Sender die Größe seines receive Windows im Header des Segments.\\
+\noindent Sender schickt niemals mehr als \textit{receive Window} unbestätigte Daten\\
+\noindent Damit ist garantiert, dass der Empfangsbuffer niemals überlauft.\\
+Für den Fall, dass der Empfangsbuffer die Größe Null hat, werden als keepalive 1 Byte Segmente gesendet.
+
+\subsection{TCP 3-way Handshake}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/Ch3/TCP3wayHS.png}
+    \caption{Ablauf eines TCP 3-way Handshakes}
+    \label{Ch03-TCP-HS}
+\end{figure}
+
+\begin{enumerate}
+    \item Der Client sendet ein spezielles TCP Segment an die Serverseite. Dieses Segmente enthält keine Applicationlayerdaten. Das SYN-BIT ist gesetzt. Außerdem wählt der Client eine zufällige Seq.-Nummer (Sicherheitrelevant). Das Paket wird dann in ein IP-Datagram verpackt und versendet
+    \item Kommt das vom Client gesendete Segment beim Server an, allokiert dieser den TCP-Buffer. Außerdem sendet er an den Client ein SYN-ACK Segment zurück. Er bestätigte damit das SYN-Segment (erhöht Seq.-Nummer im ACKwie gewohnt). Die Serverseite wählt ihre eigene Seq.-Nummer und sendet das Paket an den Client
+    \item Bei Empfang des SYN-ACK-Segments allokiert der Client seinen TCP-Buffer. Der Client sendet ein ACK an den Server in welchen er den erhalt des SYN-ACK bestätigt
+\end{enumerate}
+
+\subsubsection{TCP Verbindungsabbau}
+Der TCP-Verbindungsabbau läuft analog zum Aufbau ab, siehe Abbildung \ref{Ch03-TCP-Verbindungsabbau}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{images/Ch3/TCPverbindungsabbau.png}
+    \caption{Abbau einer TCP-Verbindung}
+    \label{Ch03-TCP-Verbindungsabbau}
+\end{figure}
+
+\subsection{Prinzipien der Überlastkontrolle}
+Die Übertragungsrate einer Verbindung ist oft nicht durch die maximale Sendeleistung, sondern durch Links zwischen den Hosts beschränkt.
+Es macht also Sinn, die Senderate an die maximale Übertragungsrate anzupassen, um Paketverlust und Überlastung von Routern zwischen den Hosts zu vermeiden.
+Dies ist die Aufgabe der Überlastkontrolle (Congestion Control).
+
+\subsubsection{Ansätze der Überlastkontrolle}
+\noindent Ende-zu-Ende Überlastkontrolle:
+\begin{itemize}
+    \item kein explizites Feedback vom Netzwerk
+    \item Überlast wird von Endsystemen aus Verlust und Verzögerungen abgeschätzt
+\end{itemize}
+\noindent Netzwerk-unterstützte Überlastkontrolle
+\begin{itemize}
+    \item Router liefern Feedback an Endsysteme
+\end{itemize}
+
+\subsection{TCP Überlastkontrolle (Congestion Control)}
+Eine TCP-Verbindung hat ein Congestion- und ein Receive-Window. Das eine wird durch die Überlast- und das andere durch die Flusskontrolle bestimmt.\\
+Allgemein gilt 
+\begin{equation}
+    \text{LastByteSent} - \text{LastByteReceived} \leq \operatorname{min}[\text{cwnd},\text{rwnd}] 
+\end{equation}
+
+TCP geht bei der Congestion Control nach den folgenden Prinzipien vor:
+\begin{itemize}
+    \item Ein verlorenes Segment ist ein Indiz für Congestion und der Sender sollte seine Rate verringern
+    \item Ein ACK Segmente ist ein Indiz dafür, dass der Sender seine Rate weiter erhöhen kann
+    \item Bandwith probing: TCP erhöht bei erfolgreicher Übertragung die Rate so lange bis eine Übertragung schlussendlich fehlschlägt
+\end{itemize}
+
+\subsubsection{Slow Start}
+Wenn die Verbindung beginnt wächst das cwnd exponentiell an, bis der erste Verlust auftritt.
+\begin{itemize}
+    \item initiales cwnd = 1MSS
+    \item verdopple cwnd in jeder RTT (cwnd++ bei jedem ACK)
+    \item intiale Senderate ist langsam, steigt aber exponentiell
+\end{itemize}
+Aus einem Timeout wird auf Verlust geschlossen. cwnd wird auf 1 MSS gesetzt. Das cwnd wächst nun erneut wie beim Slow Start exponentiell, bis es den Threshhold (Häfte des vorherigen Paketverlusts) erreicht, dannach lineares Wachstum.
+
+\subsubsection{Congestion Avoidance}
+Im Congestion Avoidance Modus wird pro RTT das das cwnd nur ums eins erhöht.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch3/CCautomat.png}
+    \caption{Automat der TCP Congestion Control}
+    \label{Ch03-TCP-CCautomat}
+\end{figure}
+
+\subsubsection{Fastrecovery}
+Bei 3 duplicate ACK geht TCP vom Slow Start/Congestion Avoidance Modus in den fast recovery Modus über. In diesem wird pro duplicate ACK das cwnd um eins erhöht (sofern möglich).\\
+Kommt ein neues ACK an, geht die Verbindung in den Congestion Avoidance Modus über. Kommmt es zu einem Timeout wird die MSS auf 1 gesetzt und es kommt zu einem erneuten Slow Start.\\
+\hfill \break
+Fast recovery ist optional und nicht in jeder TCP-Implementierung enthalten. Siehe hier bspw. TCP Tahoe und TCP Reno.\\
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch3/TCPFastRc.png}
+    \caption{Vergleich von TCP Tahoe und TCP Reno}
+    \label{Ch03-TCP-TahoeReno}
+\end{figure}
+
+\subsubsection{Additive Increase \& multiplicative decrease}
+Additve Increase und multiplicative Decrease beschreibt den Mechanismus, dass das cwnd sich immer nur additiv erhöht (im Slow Start cwnd++ für jedes erhaltene ACK, im Congestion Avoidance Mode cwnd++ pro RTT).
+Im Gegensatz dazu schrumpft das cwnd im Fall eines Paketverlusts multiplikativ (abhängig von der Implementierung zurück auf cwnd = 1 MSS oder auf cwnd = 0.5 cwnd).
+
+\subsubsection{Bemerkung zur Congestion Control}
+In welcher Form die Congestion Control umgesetzt wird, hängt stark von der TCP Implementierung ab. \\
+\noindent Es gibt auch explicit congestion notification, hierbei handelt es sich um Router unterstützte Congestion Control.
+\begin{itemize}
+    \item Zwei bits im IP Header (ToS Feld) können vom Router gesetzt werden, um Congestion zu markieren
+    \item Congestion Indication werden bis zum Empfänger durchgestellt
+    \item Empfänger reflektiert diese Meldung im ECE Bit von ACK Segmenten um Sender zu benachrichtigen
+\end{itemize}
+
+\subsection{TCP Fairness}
+Das Ziel ist, wenn sich $K$ TCP Verbindungen einen gemeinesamen Bottlenecklink mit Bandbreite R teilen, sollte jeder Verbindung eine Bandbreite von $R/K$ zugewiesen bekommen.\\
+\noindent TCP ist fair, da AIMD angewendet wird und sich so ein Gleichgewicht zwischen allen Verbindungen einstellt.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{images/Ch3/TCPfairness.png}
+    \caption{TCP Fairness durch AIMD}
+    \label{Ch03-TCP-fairness}
+\end{figure}
+
+\subsubsection{Fairness und UDP}
+Wie bereits erwähnt nutzen viele Multimedia Anwendungen oft kein TCP und werden daher auch nicht durch die Congestion Control gedrosselt. UDP entspricht nicht dem Fairness-Gedanken von TCP und benachteiligt diese Verbindungen.
+
+\subsubsection{Fairness und parallele TCP-Verbindungen}
+Anwendungen können mehrere parallele TCP Verbindungen zwischen zwei Hosts öffnen, dies wird oft von Webbrowsern eingesetzt. Auch wenn dies technisch gesehen der Fairnessbedingung entspricht erhält ein Host mit mehreren TCP Verbindungen auch mehr Bandbreite.
+
+\subsection{Multipath TCP}
+TCP Variante mit Unterstützung von multi-homing/multipath.
+\begin{itemize}
+    \item Multi-homing: ein Host hat mehrere Endpunkte/Interfaces
+    \item Multipath: zwischen zwei Hosts werden mehrere Pfade für eine Verbindung genutzt
+\end{itemize}
+\noindent Herausforderungen bei der Umsetzung:
+\begin{itemize}
+    \item Komplexe Congestion Control
+    \item Rückwärtskompatibilität: Fallback auf klassisches TCP
+    \item Verbindungsabbrüche auf einzelnen Pfaden
+\end{itemize}

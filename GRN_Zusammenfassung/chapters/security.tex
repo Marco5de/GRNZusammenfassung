@@ -1,0 +1,75 @@
+\section{Grundlegende Prinzipien der Netzwerksicherheit}
+
+
+\subsection{Prinzpien}
+\begin{itemize}
+    \item \emph{Vertraulichkeit}: nur Sender und rechmäßiger Empfägner können auf Inhalt zugreifen
+    \item \emph{Integrität}: Sender und Empfänger stellen sicher, dass die Nachricht\\ während der Übertragung nicht verändert wird
+    \item \emph{Verfügbarkeit}: Dienste müssen für den Benutzer zugreifbar und \\verfügbar sein
+\end{itemize}
+
+\subsection{Angriffsformen}
+\begin{itemize}
+    \item \emph{Eavesdropping}: abhören von Nachrichten
+    \item \emph{Man-in-the-middle}: Nachrichten abfangen und modifizieren
+    \item \emph{Spoofing}: sich als eine andere Partei ausgeben
+    \item \emph{Hijacking}: bereits bestehende Verbindung übernehmen
+    \item \emph{Dos} denial of service attacks
+\end{itemize}
+
+\section{Symmetrische Verschlüsselungsverfahren}
+In symmetrischen Verschlüsselungsverfahren teilen sich Sender und Empfänger einen \emph{gemeinsamen} symmetrischen Schlüssel $K_S$. Dieser gemeinsame Schlüssel wird sowohl zum Verschlüsseln als auch zum Entschlüsseln verwendet. Es gilt also $K_S(K_S(m))=m$ wobei $m$ die Nachricht ist.\\
+Beispiel für ein einfaches symmetrisches Verschlüsselungsverfahren ist die Cäsarchiffre, dieses Verfahren gehört zur Kategorie der \emph{Monoalphabetischen} Substitutionschiffren. Komplexere Verfahren sind bspw. \emph{polyalphabetische} Substitutionschiffren.
+
+\subsection{Moderne symmetrische Chiffren}
+\emph{DES} steht für \textit{Data Encryption Standard} mit einer Schlüssellänge von 56bit und mit 64bit Klartextblöcken. Bei DES handelt es sich um eine Blockchiffre. Einfaches DES kann per brute force innerhalb eines Tages entschlüsselt werden. Eine sicherere Variante ist \emph{3DES}, bei welchem drei mal mit drei verschiedenen Schlüsseln verschlüsselt wird.\\
+Ein weiteres symmterisches Verschlüsselungsverfahren ist \emph{AES}(Advanced Encryption Standard). Dieser nutzt eine Blocklänge von 128 Bit und Schlüssellängen von 128,192 oder 256 Bit. Durch die erhöhte Schlüssellänge kann die Nachricht nicht mehr per brute force entschlüsselt werden.\\
+\hfill\break
+Bei symmetrischen Chiffren müssen der Sender und der Empfänger einen gemeinsamen Schlüssel kennen. Damit entsteht das Problem, des sicheren Transports dieses Schlüssels über einen unzuverlässigen Kanal. Eine mögliche Lösung für diese Problem ist \emph{asymmetrische Kryptographie} (public key cryptography). Hierbei besitzt der Empfänger/Sender sowohl einen öffentlichen als auch einen privaten Schlüssel.
+
+\section{Public Key Kryptographie}
+Jeder Empfänger/Sender hat einen privaten und einen öffentlichen Schlüssel. Eine Nachricht wird mit dem öffentlichen Schlüssel des Empfängers verschlüsselt, damit dieser die Nachricht mit seinem privaten Schlüssel entschlüsseln kann. Es gilt also $K^-(K^+(m))=m$ wobei $K^-$ der private und $K^+$ der öffentliche Schlüssel ist.\\
+Es ist quasi unmöglich aus dem öffentlichen Schlüssel den privaten Privaten zu berechnen.
+
+\subsection{Praktische Anwendung}
+Operationen mit RSA sind sehr rechenaufwendig und man möchte dies so gut es geht vermeiden. Vor allem sind Verfahren wie DES oder AES mindestens 100x schneller als RSA.\\
+Ein Lösung hierfür ist public key encryption zu verwenden um einen symmetrischen Schlüssel zwischen Sender und Empfänger austauschen. Der eigentliche Datenfluss wird dann mit einem symmetrischen Verschlüsselungsverfahren verschlüsselt.
+Ein Beispiel hierfür ist der \emph{Diffie–Hellman key exchange}.
+
+\section{Digitale Signaturen}
+Es wird eine Möglichkeit gesucht, wie der Empfänger sicher gehen kann, dass das von ihm empfangene Paket tatsächelich vom Sender stammt. Eine Möglichkeit dies sicherzustellen sind digitale Signaturen.
+
+\subsubsection{Beispiel: einfache digitale Signatur}
+Es soll eine einfach digitale Signatur für eine Nachricht $m$ gefunden werden. Es wird die Nachricht $m$ in eine kryptographische hash-Funktion gegeben. Diese erzeugt aus der Nachricht $m$ von beliebiger Länge einen \emph{Message Digest} fester Länge. Es ist quasi unmöglich aus diesem $h(m)$ die ursprüngliche Nachricht $m$ zu berechnen.\\
+Beispiele für solche Funktionen sind die unsichere MD5 oder SHA-2/3.
+
+\section{Certification authorities}
+Ein weiteres Problem sind MitM Angriffe, bei denen ein Angreifer falsche public keys in den Umlauf bringt. CA bindet den öffentlichen Schlüssel von Alice an ihren Namen. Dafür muss Alice einen Identitätsbeweis und ihren öffentlichen Schlüssel an CA liefern. CA erzeugt dann ein Zertifikat\\ cert(PK, Alice, Gültigkeitszeitraum). Dieses Zertifikat ist von der CA digital signiert und somit von anderen überprüfbar.
+
+\section{SSL und TLS}
+\emph{Secure Socket Layer} und \emph{Transport Layer Security} ist ein weit verbreitetes security Protokoll. Es findet Anwendung im Browser und Webservern (https). SSL/TLS ermöglicht einige der Prinzipien der Netzwerksicherheit, Vertraulichkeit, Integrität und Authentizizäz.
+Ein Vorteil ist, dass es auf beliebige TCP Verbindungen angewendet werden kann.
+
+\subsection{TLS im Schichtenmodell}
+SSL/TLS stellt Anwendungen eine API zur Verfügung und ist also zwischen der Transport- und der Anwendungsschicht einzuordnen.
+
+\subsubsection{SSL/TLS Protokoll}
+Ist aus zwei Phasen aufgebaut, dem Handshake und dem Record Protokoll
+
+\begin{itemize}
+    \item Handshake Protokoll
+            \begin{itemize}
+                \item Vereinbarung der Kryptoalgorithmen 
+                \item Server Authentisierung
+                \item Client Authentisierung
+                \item Vereinbarung von Sitzungsschlüsseln
+            \end{itemize}
+    \item Record Protokoll
+            \begin{itemize}
+                \item Datenübertragung
+                \item Verschlüsselung
+                \item Integritätssicherung
+                \item Session Verwaltung und Wiederaufnahme
+                \item Optional Komprimierung und Fragmentierung
+            \end{itemize}
+\end{itemize}

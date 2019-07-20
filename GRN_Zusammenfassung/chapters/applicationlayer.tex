@@ -1,0 +1,426 @@
+
+
+\section{Grundlagen der Netzwerkanwendungen}
+\subsection{Architekturen für Netzwerkanwendungen}
+
+\subsubsection{Client-Server Architektur}
+Server:
+\begin{itemize}
+    \item Host dauerhaft erreichbar
+    \item permanente IP-Adresse
+\end{itemize}
+
+\noindent Clients:
+\begin{itemize}
+    \item iniitieren Verbindung zum Client
+    \item im Allgemeinen nur zeitweise online
+    \item dynamische wechselnde IP-Adressen
+    \item kommunizieren nicht direkt miteinander
+\end{itemize}
+
+\subsubsection{Peer-2-Peer Architektur}
+\begin{itemize}
+    \item kein ständig verfügbarer Server
+    \item Endsysteme kommunizieren direkt miteinander
+    \item Peers erbringen Dienste und nutzen Dienste von anderen Peers
+    \item Peers sind nur zeitweise verbunden und wechseln IP-Adressen dynamisch
+\end{itemize}
+\noindent
+Eine Peer-to-Peer Architektur hat in manchen Fällen Vorteile gegenüber einer Client-Server Architektur: Zum Beispiel wächst die Verteilzeit einer Datei bei Client-Server linear mit der Anzahl der Clients an, bei Peer-to-Peer nur etwa logarithmisch.
+
+\subsection{Kommunizierende Prozesse}
+\textbf{Def}: Prozess: ein Programm, das auf einem Host abläuft\\
+Hosts in verschiedenen Endsystemen kommunizieren über Messages miteinander.
+\begin{center}
+    \textit{Im Zusammenhang von kommuniziernden Prozessen ist der Prozess, welcher die Verbindung initiiert der Client. Der auf eine Verbindung wartende Prozess ist der Server.}
+\end{center}
+
+\subsection{Sockets}
+Ein \emph{Socket} stellt eine Schnittstelle zum Betriebssystem dar, in welche Nachrichten geschrieben und aus welcher Nachrichten gelesen werden können. Das Konzept der Sockets bildet eine \emph{Abstraktion} zu den darunterliegenden \\
+\noindent Um einen Prozess identifizieren zu können, wird eine IP-Adresse und eine Portnummer benötigt. Anwendungsprotokolle nutzen oft Well-known Portnummern wie HTTP: 80 oder SMTP: 25
+
+\subsection{Anwendungsprotokolle}
+Anwendungsprotokolle definieren 
+\begin{itemize}
+    \item Typ der Nachricht (bspw. Response oder Request)
+    \item Nachrichtensyntax
+    \item Nachrichtensemantik
+    \item Regeln wann und wie Prozesse Nachrichten austauschen oder auf diese reagieren
+\end{itemize}
+
+\noindent Im Allgemeinen können \emph{Anwendungsprotokolle} in zwei Kategorien aufgeteilt werden:\\
+\noindent Offene Protokolle:
+\begin{itemize}
+    \item definiert in RFC
+    \item ermöglicht Interoperabilität
+\end{itemize}
+\noindent Proprietäre Protokolle
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/Ch1/RMS.jpg}
+    \caption{RMS Disapproves.}
+    \label{fig:RMS}
+\end{figure}
+
+\section{HyperText Transfer Protocol}
+\subsection{Überblick}
+\begin{itemize}
+    \item nutzt \emph{Client-Server Modell}
+    \item Nutzt TCP \begin{itemize}
+        \item Client iniitiert TCP Verbindung zum Server auf Port 80
+        \item Server akzeptiert Verbindungsaufbau 
+        \item HTTP Nachrichten werden ausgetauscht
+        \item TCP Verbindung wird geschlossen
+    \end{itemize}
+    \item HTTP ist zustandslos (Server behält keine Information über Client (Workaround: Cookies))
+\end{itemize}
+
+\subsection{HTTP Verbindungen}
+Es kann zwischen zwei Arten von HTTP Verbindungen unterschieden werden, \emph{nicht-persistentes} und \emph{persistentes} HTTP.
+\subsubsection{Nicht-persistentes HTTP}
+Client verbindet sich mit Server und fordert HTML file an welches 10 Bilder enthält.\\
+\begin{enumerate}
+    \item HTTP Client iniitiert TCP Verbindung mit Server auf Port 80
+    \item HTTP Client sendet Request-Nachricht über Socket an Server (enthält Pfad)
+    \item HTTP Server erhält Request, holt gewünschtes Dokument und sendet HTTP Response-Nachricht über Socket an Client
+    \item HTTP Server beendet Verbindung (TCP wartet bis Client Nachricht erhalten hat)
+    \item HTTP Client erhält Response. TCP Verbindung wird beendet. Das erhaltene Dokument enthält den Pfad zu 10 Bildern
+    \item Schritt 1-4 werden für jedes der Bilder durchgeführt
+\end{enumerate}
+
+\subsubsection{Persistentes HTTP}
+Mit einer persistenten HTTP Verbindung kann eine einzelne Verbindung zum Austausch des HTML Dokuments und der 10 Bilder genutzt werden, ohne eine neue TCP Verbindung aufbauen zu müssen.\\
+\noindent Der Abbau der Verbindung erfolgt durch Client oder durch einen Timeout. Die Effizienz kann weiter verbessert werden durch Pipelining.
+
+\noindent
+(Rechenbeispiel etwa B2Ü3.)
+
+\subsection{HTTP Nachrichtenformat}
+Es gibt zwei verschiedene Arten von HTTP Nachrichten, \emph{Response}- und \emph{Requestmessages}.
+
+\subsubsection{Aufbau einer HTTP-Request}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch2/HTTPRequest.png}
+    \caption{Allgemeiner Aufbau einer HTTP Request}
+\end{figure}
+
+HTTP Methoden:
+\begin{itemize}
+    \item \textbf{GET}: Anfragen von Information durch Spezifizieren der URI(uniform resource indentifier)
+    \item \textbf{POST}: Senden von Daten zum Server
+    \item \textbf{HEAD}: Anfragen des Headers (bspw. für Debug Zwecke)
+    \item \textbf{PUT}: Upload von Dateien an den Server, an die durch URL kodierte Stelle
+    \item \textbf{DELETE}: Löschen von Dateien auf dem Webserver
+\end{itemize}
+
+\subsubsection{Aufbau einer HTTP-Response}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch2/HTTPResponse.png}
+    \caption{Allgemeiner Aufbau einer HTTP Response}
+\end{figure}
+
+HTTP-Status Codes:
+\begin{itemize}
+    \item \textbf{200 OK}: Request erfolgreich. Webobjekt im Body
+    \item \textbf{301 Moved Permanently}: Object dauerhaft verschoben, neue URL im Location Header
+    \item \textbf{400 Bad Request}: Server versteht Request nicht
+    \item \textbf{404 Not Found}: Angefragtes Objekt existiert nicht
+    \item \textbf{505 HTTP Version Not Supported}: Unbekannte HTTP Version
+\end{itemize}
+und mehr. For Reference: \lstinline{https://http.cat/[status_code]}
+
+\subsection{User-Server Interaktion: Cookies}
+Wie bereits zuvor erwähnt ist HTTP \emph{zustandslos}, allerdings ist es oftmals interessant Informationen über den Client zu erhalten. Um die Effizienz eines zustandslosen Protokolls zu erhalten und trotzdem Nutzerinformation verwenden zu können, werden \emph{Cookies} verwendet.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch2/HTTPCookies.png}
+    \caption{Zustandsinformation mit der Hilfe von Cookies}
+\end{figure}
+
+
+\subsection{Web-Caching}
+Ein Web-Cache oder Proxy-Server ist eine Netzwerk-Entität welche die Bearbeitung von HTTP Requests für den ursprünglichen Webserver übernimmt. Der Proxy-Server hat seinen eigenen Speicher auf welchem er kürzlich angeforderte Objekte speichert.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch2/HTTPPRoxy.png}
+    \caption{Clients requesten Objekte über Proxy-Server}
+\end{figure}
+Ist ein solcher Proxy-Server im Netzwerk vorhanden läuft eine HTTP-Request folgendermaßen ab:
+\begin{enumerate}
+    \item Browser erstellt TCP Verbindung zum Web Cache und sendet HTTP-Request an diesen
+    \item Web Cache prüft ob er eine Kopie des Objekts lokal gespeichert hat. Wenn ja, gibt der Web Cache das gewünschte Objekt zurück in einer HTTP Response
+    \item Hat der Web Cache das Objekt nicht lokal gespeichert öffnet der Web Cache eine TCP Verbindung zum ursprünglichen Webserver. Er sendet eine HTTP-Request und ruft das gewünschte Objekt ab
+    \item Hat der Web Cache das Objekte vom ursprünglichen Webserver erhalten, speichert er dieses und sendet eine Kopie in einer HTTP-Response an den Client 
+\end{enumerate}
+
+\noindent Ein Web Cache ist also \emph{gleichzeitig} Server und Client. Ein solcher Web Cache bietet mehrere Vorteile. Unter anderem eine \emph{reduzierte Responsezeit} auf eine Client Request und zum anderen \emph{vermindert} ein solcher Web Cache den \emph{Traffic} auf anderen Links.\\
+Der Proxy-Server ist an dieser Stelle verantwortlich, dass die gespeicherten Seiten aktuell sind. Der Proxy-Server speichert dazu das last-modified Datum. Für den Fall, dass sich etwas geändert haben könnte fragt der Proxy-Server mit einem sogenannten conditional GET den Server nach einer aktuelleren Version. Dafür wird im Header die Zeile If-modified-since hinzugefügt. Die Antwort des Servers ist dann 304 Not Modified, oder eine gewöhnliche Response mit dem neuen Inhalt.
+
+\section{Simple Mail Transfer Protocol}
+Abbildung \ref{Ch02-SMTP_Overview} ermöglicht einen vereinfachten Überblick über die beteiltigten Entitäten (User Agents, Mail Server und SMTP Protokoll)\\
+\noindent Hierbei sind \emph{User Agents} bspw. MailClients wie Outlook oder WebMail. Der User Agent ermöglicht dem Benutzer das Lesen und Schreiben von E-Mails.\\
+\noindent Der Mailserver speichert in der Mailbox die eingehenden Nachrichten der Benutzer und ermöglicht Nutzern das Abrufen von Nachrichten.\\
+\noindent Das SMTP Protokoll definiert den Austausch zwischen zwei Servern bzw. zwischen Server und Mail Agent.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch2/SMTP_Overvoew.png}
+    \caption{Überblick über SMTP}
+    \label{Ch02-SMTP_Overview}
+\end{figure}
+
+\subsection{Eigenschaften von SMTP}
+\begin{itemize}
+    \item SMTP ist \emph{TCP} basiert und nutzt well-known port 25
+    \item SMTP verwendet \emph{persistente Verbindungen}
+    \item drei Protokollphasen (Handshake, Nachrichtentransfer, Verbindunungsabbau)
+    \item SMTP ist \emph{7bit-ASCII} basiert ($\rightarrow$ MIME-Encoding für zusätzliches)
+    \item SMTP ist ein \emph{push-Protokoll}
+\end{itemize}
+
+\subsection{SMTP am Beispiel}
+In Abbildung \ref{Ch02-SMTP_example} ist mögliches Szenario in welchem SMTP eingesetzt wird zu sehen.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch2/SMTP_example.png}
+    \caption{Alice sendet E-Mail an Bob}
+    \label{Ch02-SMTP_example}
+\end{figure}
+
+\begin{enumerate}
+    \item Alice erstellt Mail im UA adressiert an Bob
+    \item Alice UA sendet die Nachricht an ihren Mail Server. Dort wird die Nachricht in der Nachrichtenqueue gespeichert
+    \item Alice(Client) Mail Server initiiert TCP Verbindungs zu Bob Mail Server
+    \item SMTP Client sendet E-Mail über TCP-Verbindung 
+    \item Bob Mail Server speichert die Nachricht in der MailBox ab
+    \item Bob kann jetzt UA verwenden um Mail abzurufen
+\end{enumerate}
+
+\begin{figure}[H]
+\begin{lstlisting}[frame=single] 
+220 mail.uni-ulm.de ESMTP Sendmail 8.15.2/8.15.2; \
+Tue, 13 Nov 2018 21:02:51 +0100 (CET)
+HELO mail.uni-ulm.de
+250 mail.uni-ulm.de Hello whm-hms-nat4.rz.uni-ulm.de \
+[193.197.66.16],pleased to meet you
+MAIL FROM: <edwin.otto@uni-ulm.de>
+250 2.1.0 <edwin.otto@uni-ulm.de>... Sender ok
+RCPT TO: <grn-smtp@lists.uni-ulm.de>
+250 2.1.5 <grn-smtp@lists.uni-ulm.de>... Recipient ok
+DATA
+354 Enter mail, end with "." on a line by itself
+From: edwin.otto@uni-ulm.de
+To: grn-smtp@lists.uni-ulm.de
+Subject: GRN-SMTP
+X-GRN-Semester: WS 2018/19
+X-GRN-Group: 101
+
+Hallo GRN!
+.
+250 2.0.0 wADK2p4P027754 Message accepted for delivery
+QUIT
+221 2.0.0 mail.uni-ulm.de closing connection
+
+\end{lstlisting}
+    \caption{Manueller Versand einer Mail mit Hilfe von SMTP}
+    \label{SMTP_manex}
+\end{figure}
+
+\subsection{SMTP Nachrichtenformat}
+\begin{itemize}
+    \item Encoding: 7-bit ASCII (MIME Encoding)
+    \item Header: Zeilen im Format \lstinline{Key: Value}
+    \item Body: Eigentliche Nachricht
+    \item End of Message: \lstinline{CRLF . CRLF}
+\end{itemize}
+
+\subsection{Mail Access Protocol}
+Das SMTP Protokoll kümmert sich nur darum, dass eine gesendet Nachricht in der MailBox des Empfängers landet. Für das Abrufen einer Nachricht sind Mail Access Protokolle verantwortlich. Die zwei bekanntesten sind \emph{POP} und \emph{IMAP}.\\
+\noindent Mail Access Protokolle ermöglichen es Nutzern, Mails vom Server abzurufen. Bei POP werden die Mails auf dem Gerät des Nutzers gespeichert, bei IMAP verbleiben die Mails auf dem Server. Außerdem bietet IMAP zusätzliche Funktionalität, wie das Verwalten von Nachrichten in Ordnern oder das Speichern des Zustands einer Nachricht (gelesen, markiert, archiviert).
+
+\section{Domain Name System (DNS)}
+Die Hauptaufgabe von DNS ist die Auflösung von Domain Namen zu IP-Adressen.
+\begin{itemize}
+    \item DNS ist eine \emph{verteilte} Datenbank mit Hierarchie von vielen DNS Nameservern
+    \item DNS ist Anwendungsprotokoll:
+        \begin{itemize}
+            \item Zentrale Funktonalität des Internets, nicht in TCP/IP enthalten
+            \item KISS Prinzip (Keep it simple and stupid): Komplexität nur am Rand
+        \end{itemize}
+\end{itemize}
+
+\noindent Welche Dienste bietet DNS an?
+\begin{itemize}
+    \item Auflösung von Hostnamen zu IP-Adressen und umgekehrt
+    \item Host-Aliase
+    \item zuständige Mail-Server
+    \item Lastverteilung
+\end{itemize}
+
+\noindent Es ist sinnvoll, dass DNS ein verteiltes System ist. So hat man \emph{keinen Single Point of failure}, das Datenvolumen ist verteilt und das System ist leicht zu warten und sehr zuverlässig.
+
+\subsection{DNS-Hierarchie}
+In Abbildung \ref{Ch02-DNS_Hierarchy} ist der hierarchische Aufbau der DNS-Server zu sehen.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch2/DNS_Hierarchy.png}
+    \caption{Aufbau der DNS-Hierarchie}
+    \label{Ch02-DNS_Hierarchy}
+\end{figure}
+
+\subsubsection{DNS Root-Server}
+Im gesamten Internet gibt es 13 DNS Root Server. Jeder dieser 13 ist aber tatsächlich ein Verbund von weiteren Servern um die Zuverlässigkeit und Sicherheit zu erhöhen.
+
+\subsubsection{Toplevel Domain-Server (TLD Server)}
+Diese Server sind für Toplevel Domains wie .com, .space, .lol, .ninja, .porn usw. zuständig ebenso wie für die Landes spezifischen Domains wie .de, .fr und so weiter.
+
+\subsubsection{Autoritative DNS-Server}
+Jede Organisation mit öffentlich erreichbaren Hosts muss die DNS-Records dieser Hosts zur Verfügung stellen. Dies kann entweder durch einen eigenen DNS-Server oder durch Server eines Providers geschehen.\\
+\noindent Dies ist der Nameserver der die Orginaldaten einer Domain besitzt. Es gibt in der Regel einen Primary Nameserver welcher die Orignaldaten verwaltet und einen Secondary Nameserver welcher aus Redundanzgründen Kopien der Daten hält.
+
+\subsubsection{Local Resolving DNS-Namesever}
+\begin{itemize}
+    \item gehört nicht notwendigerweise zur DNS-Hierarchie
+    \item ISPs betreiben resolving Nameserver für ihre Kunden
+    \item Hosts senden anfragen in der Regel an resolving Nameserver. Dieser kümmert sich dann um die weitere Auflösung der Anfrage. Ein solcher resolving Nameserver betreibt auch Caching von früherern Anfragen
+\end{itemize}
+
+\subsection{DNS Namensauflösung}
+Beachte, dass sobald der authoritative DNS-Server erreicht wird, dieser die Anfrage auflöst und es keine weiteren Anfragen mehr gibt (kam in Altklausur aufgabe dran, musste dort beachtet werden da dann eine unnötige Verbindung eingezeichnet war)
+\subsubsection{Iterative Auflösung}
+In Abbildung \ref{Ch02-DNS_iterative} ist die iterative Auflösung einer DNS Anfrage zu sehen. Dabei sendet jeder Server einen Verweis auf den nächsten Server, so lange bis der autoritative Nameserver erreicht ist. Nur local Resolver löst aus Client Sicht rekursiv auf.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{images/Ch2/DNS_Iterativ.png}
+    \caption{Iterative Auflösung einer DNS Anfrage}
+    \label{Ch02-DNS_iterative}
+\end{figure}
+
+\subsubsection{Rekursive Auflösung}
+In Abbildung \ref{Ch02-DNS-recursive} ist die rekursive Auflösung einer DNS Anfrage zu sehen. Dabei löst der angefragte Nameserver den Namen vollständig auf und liefert nur das Ergebnis zurück.\\
+\noindent Der Nachteil hiervon ist eine sehr hohe Last für Server höher in der Hierarchie (Root- \& TLD-Server), daher verweigern Root- und TLD-Nameserver rekursive Auflösung.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{images/Ch2/DNS_recursive.png}
+    \caption{Rekursive Auflösung einer DNS Anfrage}
+    \label{Ch02-DNS-recursive}
+\end{figure}
+
+\subsection{DNS Records und Messages}
+DNS Records (RR: resource records) sind ein viertupel bestehend aus
+\begin{center}
+    (name,value,type,ttl)
+\end{center}
+
+\subsubsection{Type=A}
+\begin{itemize}
+    \item Name: Hostname
+    \item Value: IPv4-Adresse
+\end{itemize}
+
+\subsubsection{Type=NS}
+\begin{itemize}
+    \item Name: Domain (bspw. uni-ulm.de)
+    \item Value: Hostname des authoritativen Nameservers
+    \item mehrere Rekordeinträge für gleichen Namen möglich
+\end{itemize}
+
+\subsubsection{Type=CNAME}
+\begin{itemize}
+    \item Name: Alias
+    \item Value: \glqq canonical\grqq Name (echter Name)
+\end{itemize}
+
+\subsubsection{Type=MX}
+\begin{itemize}
+    \item Name: Host- oder Domainname
+    \item Value: Name des zuständigen Mailservers
+    \item Bsp: uni-ulm.de $\rightarrow$ mail.uni-ulm.de
+\end{itemize}
+
+\subsubsection{Type=AAAA}
+\begin{itemize}
+    \item Name: Hostname
+    \item Value: IPv6-Adresse 
+\end{itemize}
+
+\subsubsection{DNS-Message Format}
+In Abbildung \ref{Ch02-DNS_messageFormat} ist das Format einer DNS Message zu sehen.\\
+\noindent DNS nutzt \emph{UDP} oder \emph{TCP}. Query und Reply haben das gleiche Format.\\
+\noindent Identification im Header, es werden 16Bit zur Zuordnung von Query und Reply verwendet. Außerdem gibt es die folgenden Flags: \textit{query} or\textit{reply}, \textit{recursion desired}, \textit{recursion available}, \textit{reply is authoritative}.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Ch2/DNS_message.png}
+    \caption{Aufbau einer DNS-Message}
+    \label{Ch02-DNS_messageFormat}
+\end{figure}
+
+\subsection{Angriffe auf DNS}
+\begin{itemize}
+    \item DDoS-Angriffe
+        \begin{itemize}
+            \item Überlastung von Root oder TLD Servern heute kaum noch erfolgreich
+            \item Traffic Filter
+            \item Root und TLD Server vielfach gecached
+        \end{itemize}
+    \item DNS Redirection Angriffe
+        \begin{itemize}
+            \item Man-in-the-Middle: Angreifer fängt Datenverkehr ab und gibt sich als DNS Server aus
+            \item DNS Cache Poisoning: Caches in Middleboxes werden mit gefälschten Informationen vergiftet
+        \end{itemize}
+    \item DNS Amplification Angriffe
+        \begin{itemize}
+            \item DNS Server werden für DDoS misbraucht
+            \item Angreifer sendet Queries mit gefälschten Absenderaddressen an DNS Server
+            \item DNS Server schicken (deutlich größere) Antworten an Angriffsziel
+        \end{itemize}
+\end{itemize}
+
+\section{Peer-to-Peer Architekturen}
+\subsection{Allgemeine Charakteristika}
+\begin{itemize}
+    \item keine always on Server
+    \item beliebige Endsysteme kommunizieren direkt miteinander
+    \item Peers sind nur sporadisch miteinander verbunden und wechseln ihre IP-Adressen
+\end{itemize}
+Einige Beispiele für P2P-Verbindungen sind \emph{File Sharing Applikationen} wie BitTorrent, Streaming (KanKan), \emph{VoIP} (früher Skype) und update Mechanismen in \emph{online Spielen}.
+
+\subsection{Vorteile von P2P}
+Der hauptsächliche Vorteil von P2P ist, dass es deutlich besser \emph{skaliert} als eine Client-Server Architektur (siehe Übungsaufgabe B5.Ü1).\\
+\noindent In einem P2P-Netz ist jeder Peer gleichzeitig Client und Server und trägt etwas seiner Upload-Kapazität bei. Bei einer Client-Server Architektur nutzt der Client nur seine Downloadverbindung und lastet den Server stärker aus.
+
+\subsubsection{File Distribution Time: Client-Server}
+\noindent Server Übertragung:
+\begin{itemize}
+    \item sequentielles Senden von $N$ File Kopien
+    \item Zeit pro Kopie $F/u_s$ wobei $F$ die Dateigröße ist
+    \item Zeit für N Kopien somit $NF/u_s$
+\end{itemize}
+\noindent Client Übertragung: jeder Client muss eine Kopie übertragen
+\begin{itemize}
+    \item $d_{max} = $maximale Client Download Rate
+    \item Minimale Client Download Zeit: $F/d_{max}$
+\end{itemize}
+
+Damit ergibt sich also für die Übertragung von F an N Clients bei einer Client-Server Architektur eine Zeit
+\begin{equation}
+    D_{CS} \geq max[NF/u_s,F/d_{min}]
+\end{equation}
+Es ist leicht zu erkennen, dass für ein große Anzahl an Clients die Zeit linear mit N zunimmt und es somit sehr schnell zu einer Überlastung des Servers kommen kann.
+
+\subsubsection{File Distribution Time: P2P}
+Server Übertragung: muss mindestens eine Kopie in den Umlauf bringen (Zeit für eine Kopie beträgt $F/u_s$)\\
+\noindent Client: jeder Client muss eine Kopie übertragen (minimale Downloadzeit: $F/d_{min}$\\
+\noindent Max. Upload Rate: $u_s + \Sigma u_i$ wobei die Summe der Uploadraten der Peers der des Servers aufaddiert wird.\\
+Damit ergibt sich für eine Peer2Peer Architektur also die Folgende Übertragungszeit
+\begin{equation}
+    D_{P2P} \geq max[F/u_s, F/d_{min},NF/(u_s + \Sigma u_i)]
+\end{equation}
+Es ist leicht zu erkennen dass mit steigender Zahl Clients nicht nur die Menge an Bytes die gesendet werden muss linear wächst sondern für große N auch die Uploadrate. Die Verteilzeit ist also für Client-Server Architekturen Linear während P2P Architekturen einen eher logarithmischen Verlauf liefern.

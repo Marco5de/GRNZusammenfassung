@@ -1,0 +1,19 @@
+\section{Eigenschaften Drahtloser Links im Vergleich zu drahtgebundenen Links}
+\begin{itemize}
+    \item Starke Dämpfung (\emph{Path Loss})
+    \item Interferenz mit anderen Sendern
+    \item Multipath Propagation
+    \item Hohe Bitfehlerrate
+    \item Variabler Signal-Noise-Ratio \emph{SNR}
+\end{itemize}
+
+\subsection{Hidden Terminal Problem}
+Der hohe Path Loss kann dazu führen, dass zwei Clients drahtlos mit einer Basisstation kommunizieren wollen, den jeweils anderen Client aber nicht detektieren.
+Die Clients können so keine Collision Detection betreiben und müssen auf Informationen der Basisstation zurückgreifen um kollisionsfreie Kommunikation zu gewährleisten.
+So deuten z.B. empfangene ACKs von der Basisstation darauf hin, dass diese gerade mit einem anderen Client kommuniziert.
+
+\section{802.11}
+Bisschen wie Ethernet, aber Funk:
+\subsection{CSMA/CA}
+802.11 Wireless LAN benutzt \emph{CSMA/CA} für Mehrfachzugriff. Dabei sendet ein Client den ganzen Frame, wenn der Kanal für gewisse Zeit unbelegt ist. Wenn der Kanal belegt ist, wird nach einem zufälligen Backoff Intervall gesendet. Falls kein ACK empfangen wird, findet nach zufälligem Zeitintervall eine Retransmission statt.
+\paragraph{Bemerkung} 802.11 implementiert keine Collision Detection, da die Sendeleistung oft ein Vielfaches der empfangenen Signalstärke ist.
